@@ -1,5 +1,5 @@
 // iCONup - Rust Backend
-// Secure FTP/SFTP upload with encrypted profile management
+// Secure FTP/FTPS/SFTP upload with encrypted profile management
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -8,6 +8,7 @@ use aes_gcm::{
     Aes256Gcm, Nonce,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use native_tls::TlsConnector;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use ssh2::Session;
@@ -15,7 +16,8 @@ use std::fs::{self, File};
 use std::io::{BufReader, Read, Write};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
-use suppaftp::FtpStream;
+use std::time::Duration;
+use suppaftp::{FtpStream, NativeTlsConnector, NativeTlsFtpStream};
 use tauri::{AppHandle, Emitter};
 use walkdir::WalkDir;
 
@@ -198,11 +200,77 @@ fn list_folder_contents(path: String) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
+async fn check_remote_dir(config: UploadConfig) -> Result<bool, String> {
+    match config.protocol.as_str() {
+        "ftp" => check_ftp_dir(&config),
+        "ftps" => check_ftps_dir(&config),
+        "sftp" => check_sftp_dir(&config),
+        _ => Err("Protocollo non supportato.".to_string()),
+    }
+}
+
+fn check_ftp_dir(config: &UploadConfig) -> Result<bool, String> {
+    let address = format!("{}:{}", config.host, config.port);
+    let mut ftp = FtpStream::connect(&address)
+        .map_err(|e| format!("Connessione fallita: {}", e))?;
+    ftp.login(&config.username, &config.password)
+        .map_err(|e| format!("Login fallito: {}", e))?;
+    let exists = ftp.cwd(&config.remote_path).is_ok();
+    let _ = ftp.quit();
+    Ok(exists)
+}
+
+fn check_ftps_dir(config: &UploadConfig) -> Result<bool, String> {
+    let address = format!("{}:{}", config.host, config.port);
+    let mut ftp = FtpStream::connect(&address)
+        .map_err(|e| format!("Connessione fallita: {}", e))?;
+    let ctx = TlsConnector::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .map_err(|e| format!("Errore TLS: {}", e))?;
+    let mut ftp = ftp.into_secure(NativeTlsConnector::from(ctx), &config.host)
+        .map_err(|e| format!("Upgrade TLS fallito: {}", e))?;
+    ftp.login(&config.username, &config.password)
+        .map_err(|e| format!("Login fallito: {}", e))?;
+    let exists = ftp.cwd(&config.remote_path).is_ok();
+    let _ = ftp.quit();
+    Ok(exists)
+}
+
+fn check_sftp_dir(config: &UploadConfig) -> Result<bool, String> {
+    let address = format!("{}:{}", config.host, config.port);
+    let sock_addr = std::net::ToSocketAddrs::to_socket_addrs(&address.as_str())
+        .map_err(|e| format!("Impossibile risolvere l'indirizzo: {}", e))?
+        .next()
+        .ok_or("Impossibile risolvere l'indirizzo del server".to_string())?;
+    let tcp = TcpStream::connect_timeout(&sock_addr, Duration::from_secs(10))
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::TimedOut {
+                "Connessione SFTP scaduta. Verifica che il server supporti SSH oppure usa FTP.".to_string()
+            } else {
+                format!("Connessione fallita: {}", e)
+            }
+        })?;
+    let mut session = Session::new().map_err(|e| format!("Errore sessione SSH: {}", e))?;
+    session.set_tcp_stream(tcp);
+    session.handshake().map_err(|e| format!("Handshake SSH fallito: {}", e))?;
+    session.userauth_password(&config.username, &config.password)
+        .map_err(|e| format!("Autenticazione fallita: {}", e))?;
+    if !session.authenticated() {
+        return Err("Autenticazione SFTP fallita".to_string());
+    }
+    let sftp = session.sftp().map_err(|e| format!("Errore SFTP: {}", e))?;
+    let exists = sftp.stat(Path::new(&config.remote_path)).is_ok();
+    Ok(exists)
+}
+
+#[tauri::command]
 async fn upload_folder(app: AppHandle, config: UploadConfig) -> Result<(), String> {
     match config.protocol.as_str() {
         "ftp" => do_upload_ftp(app, config),
+        "ftps" => do_upload_ftps(app, config),
         "sftp" => do_upload_sftp(app, config),
-        _ => Err("Protocollo non supportato. Usa FTP o SFTP.".to_string()),
+        _ => Err("Protocollo non supportato. Usa FTP, FTPS o SFTP.".to_string()),
     }
 }
 
@@ -296,12 +364,120 @@ fn create_ftp_dirs(ftp: &mut FtpStream, path: &str) -> Result<(), String> {
 }
 
 // =====================
+// FTPS UPLOAD (FTP + TLS)
+// =====================
+
+fn do_upload_ftps(app: AppHandle, config: UploadConfig) -> Result<(), String> {
+    let address = format!("{}:{}", config.host, config.port);
+
+    let mut ftp = FtpStream::connect(&address)
+        .map_err(|e| format!("Connessione fallita: {}", e))?;
+
+    let ctx = TlsConnector::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .map_err(|e| format!("Errore TLS: {}", e))?;
+
+    let mut ftp = ftp.into_secure(NativeTlsConnector::from(ctx), &config.host)
+        .map_err(|e| format!("Upgrade TLS fallito: {}", e))?;
+
+    ftp.login(&config.username, &config.password)
+        .map_err(|e| format!("Login fallito: {}", e))?;
+
+    ftp.transfer_type(suppaftp::types::FileType::Binary)
+        .map_err(|e| format!("Errore impostazione modalità: {}", e))?;
+
+    let files: Vec<_> = WalkDir::new(&config.local_path)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .collect();
+
+    let total = files.len() as u32;
+    let mut current: u32 = 0;
+
+    for entry in files {
+        let local_file_path = entry.path();
+        let relative_path = local_file_path
+            .strip_prefix(&config.local_path)
+            .map_err(|e| format!("Errore percorso: {}", e))?;
+
+        let remote_file_path = format!(
+            "{}/{}",
+            config.remote_path.trim_end_matches('/'),
+            relative_path.display()
+        )
+        .replace("\\", "/");
+
+        if let Some(parent) = Path::new(&remote_file_path).parent() {
+            let parent_str = parent.display().to_string().replace("\\", "/");
+            create_ftps_dirs(&mut ftp, &parent_str)?;
+        }
+
+        let file = File::open(local_file_path).map_err(|e| format!("Errore lettura file: {}", e))?;
+        let mut reader = BufReader::new(file);
+        let mut content = Vec::new();
+        reader.read_to_end(&mut content).map_err(|e| format!("Errore lettura file: {}", e))?;
+
+        let filename = relative_path.display().to_string();
+        let status = match ftp.put_file(&remote_file_path, &mut content.as_slice()) {
+            Ok(_) => "success",
+            Err(e) => {
+                eprintln!("Upload error for {}: {}", filename, e);
+                "error"
+            }
+        };
+
+        current += 1;
+        let _ = app.emit("upload-progress", UploadProgress {
+            current,
+            total,
+            filename: filename.clone(),
+            status: status.to_string(),
+        });
+    }
+
+    let _ = ftp.quit();
+    let _ = app.emit("upload-complete", UploadComplete {
+        total_files: total,
+        remote_path: config.remote_path,
+    });
+
+    Ok(())
+}
+
+fn create_ftps_dirs(ftp: &mut NativeTlsFtpStream, path: &str) -> Result<(), String> {
+    let parts: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+    let mut current_path = String::new();
+    for part in parts {
+        current_path.push('/');
+        current_path.push_str(part);
+        if ftp.cwd(&current_path).is_err() {
+            let _ = ftp.mkdir(&current_path);
+        }
+    }
+    let _ = ftp.cwd("/");
+    Ok(())
+}
+
+// =====================
 // SFTP UPLOAD
 // =====================
 
 fn do_upload_sftp(app: AppHandle, config: UploadConfig) -> Result<(), String> {
     let address = format!("{}:{}", config.host, config.port);
-    let tcp = TcpStream::connect(&address).map_err(|e| format!("Connessione fallita: {}", e))?;
+    let sock_addr = std::net::ToSocketAddrs::to_socket_addrs(&address.as_str())
+        .map_err(|e| format!("Impossibile risolvere l'indirizzo: {}", e))?
+        .next()
+        .ok_or("Impossibile risolvere l'indirizzo del server".to_string())?;
+    let tcp = TcpStream::connect_timeout(&sock_addr, Duration::from_secs(10))
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::TimedOut {
+                "Connessione SFTP scaduta. Verifica che il server supporti SSH oppure usa FTP.".to_string()
+            } else {
+                format!("Connessione fallita: {}", e)
+            }
+        })?;
 
     let mut session = Session::new().map_err(|e| format!("Errore sessione SSH: {}", e))?;
     session.set_tcp_stream(tcp);
@@ -391,6 +567,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             list_folder_contents,
             upload_folder,
+            check_remote_dir,
             load_profiles,
             save_profiles,
             export_profiles,
