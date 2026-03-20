@@ -26,15 +26,7 @@
       "csp": null
     }
   },
-  "plugins": {
-    "dialog": {
-      "all": true
-    },
-    "fs": {
-      "all": true,
-      "scope": ["**"]
-    }
-  },
+  "plugins": {},
   "bundle": {
     "active": true,
     "targets": "all",
