@@ -1,6 +1,6 @@
 [package]
 name = "iconup"
-version = "1.0.0"
+version = "1.0.133"
 description = "iCON Suite Installer - Upload sicuro via FTP/SFTP"
 authors = ["YMEDIA"]
 edition = "2021"
