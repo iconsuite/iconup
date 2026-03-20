@@ -15,6 +15,7 @@ use std::fs::{self, File};
 use std::io::{BufReader, Read, Write};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use suppaftp::FtpStream;
 use tauri::{AppHandle, Emitter};
 use walkdir::WalkDir;
@@ -198,6 +199,51 @@ fn list_folder_contents(path: String) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
+async fn check_remote_dir(config: UploadConfig) -> Result<bool, String> {
+    match config.protocol.as_str() {
+        "ftp" => check_ftp_dir(&config),
+        "sftp" => check_sftp_dir(&config),
+        _ => Err("Protocollo non supportato.".to_string()),
+    }
+}
+
+fn check_ftp_dir(config: &UploadConfig) -> Result<bool, String> {
+    let address = format!("{}:{}", config.host, config.port);
+    let mut ftp = FtpStream::connect(&address)
+        .map_err(|e| format!("Connessione fallita: {}", e))?;
+    ftp.login(&config.username, &config.password)
+        .map_err(|e| format!("Login fallito: {}", e))?;
+    let exists = ftp.cwd(&config.remote_path).is_ok();
+    let _ = ftp.quit();
+    Ok(exists)
+}
+
+fn check_sftp_dir(config: &UploadConfig) -> Result<bool, String> {
+    let address = format!("{}:{}", config.host, config.port);
+    let tcp = TcpStream::connect_timeout(
+        &address.parse().map_err(|e| format!("Indirizzo non valido: {}", e))?,
+        Duration::from_secs(10),
+    ).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::TimedOut {
+            "Connessione SFTP scaduta. Verifica che il server supporti SSH oppure usa FTP.".to_string()
+        } else {
+            format!("Connessione fallita: {}", e)
+        }
+    })?;
+    let mut session = Session::new().map_err(|e| format!("Errore sessione SSH: {}", e))?;
+    session.set_tcp_stream(tcp);
+    session.handshake().map_err(|e| format!("Handshake SSH fallito: {}", e))?;
+    session.userauth_password(&config.username, &config.password)
+        .map_err(|e| format!("Autenticazione fallita: {}", e))?;
+    if !session.authenticated() {
+        return Err("Autenticazione SFTP fallita".to_string());
+    }
+    let sftp = session.sftp().map_err(|e| format!("Errore SFTP: {}", e))?;
+    let exists = sftp.stat(Path::new(&config.remote_path)).is_ok();
+    Ok(exists)
+}
+
+#[tauri::command]
 async fn upload_folder(app: AppHandle, config: UploadConfig) -> Result<(), String> {
     match config.protocol.as_str() {
         "ftp" => do_upload_ftp(app, config),
@@ -301,7 +347,16 @@ fn create_ftp_dirs(ftp: &mut FtpStream, path: &str) -> Result<(), String> {
 
 fn do_upload_sftp(app: AppHandle, config: UploadConfig) -> Result<(), String> {
     let address = format!("{}:{}", config.host, config.port);
-    let tcp = TcpStream::connect(&address).map_err(|e| format!("Connessione fallita: {}", e))?;
+    let tcp = TcpStream::connect_timeout(
+        &address.parse().map_err(|e| format!("Indirizzo non valido: {}", e))?,
+        Duration::from_secs(10),
+    ).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::TimedOut {
+            "Connessione SFTP scaduta. Verifica che il server supporti SSH oppure usa FTP.".to_string()
+        } else {
+            format!("Connessione fallita: {}", e)
+        }
+    })?;
 
     let mut session = Session::new().map_err(|e| format!("Errore sessione SSH: {}", e))?;
     session.set_tcp_stream(tcp);
@@ -391,6 +446,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             list_folder_contents,
             upload_folder,
+            check_remote_dir,
             load_profiles,
             save_profiles,
             export_profiles,

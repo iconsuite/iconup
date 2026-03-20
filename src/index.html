@@ -7,15 +7,23 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="offline-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:9999;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
+    <div style="text-align:center;padding:40px;">
+        <div style="font-size:48px;margin-bottom:16px;">⚠</div>
+        <h2 style="font-size:18px;font-weight:600;margin-bottom:8px;">Nessuna connessione</h2>
+        <p style="color:#64748b;font-size:14px;margin-bottom:24px;">iCONup richiede una connessione internet per funzionare.</p>
+        <button onclick="location.reload()" style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Riprova</button>
+    </div>
+</div>
     <div class="app">
         <header class="header">
             <div class="logo">
-                <span class="logo-icon">⬆</span>
-                <span class="logo-text">iCON<strong>up</strong></span>
+                <span class="logo-icon-image"><img src="assets/logo.png" alt="iCONup" width="36" height="36"></span>
+                <span class="logo-icon-image"><img style="max-width: 60px; margin-left: 20px;" src="assets/iconup_main_logo.png" alt="iCONup"></span>
             </div>
             <div class="header-actions">
-                <button type="button" id="btn-manage-profiles" class="btn-icon-only" title="Gestione profili">⚙️</button>
-                <span class="version">v1.0.0</span>
+                <button type="button" id="btn-manage-profiles" class="btn-icon-only" title="Gestione profili"><img class="gear-img" src="assets/gear.svg" alt="gear" width="16" height="16"></button>
+                <span class="version">v1.0.132</span>
             </div>
         </header>
         <div class="steps">
@@ -32,13 +40,17 @@
                     <div class="form-group">
                         <label for="profile-select">Profilo cliente</label>
                         <div class="profile-select-row">
-                            <select id="profile-select"><option value="">— Nuovo / Manuale —</option></select>
-                            <button type="button" id="btn-save-profile" class="btn btn-small btn-outline" title="Salva profilo">💾</button>
+                            <div class="custom-select" id="profile-select-wrapper">
+                                <select id="profile-select" style="display:none"><option value="">— Nuovo —</option></select>
+                                <div class="custom-select-trigger" id="profile-select-trigger"><span class="custom-select-value">— Nuovo —</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="#64748b"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg></div>
+                                <div class="custom-select-options" id="profile-select-options"></div>
+                            </div>
+                            <button type="button" id="btn-save-profile" class="btn btn-save" title="Salva profilo"><img class="save-img" src="assets/save-blue.svg" alt="gear" width="30" height="30"></button>
                         </div>
                     </div>
                 </div>
                 <hr class="divider">
-                <div class="form-group"><label for="profile-name">Nome profilo</label><input type="text" id="profile-name" placeholder="Es: Pizzeria Da Mario"><small>Un nome per identificare questo cliente</small></div>
+                <div class="form-group"><label for="profile-name">Nome profilo</label><input type="text" id="profile-name" placeholder="Es: iCONSuite S.r.l."><small>Un nome per identificare questo cliente</small></div>
                 <div class="form-group"><label for="ftp-host">Host</label><input type="text" id="ftp-host" placeholder="ftp.tuosito.it"></div>
                 <div class="form-row">
                     <div class="form-group"><label for="ftp-user">Username</label><input type="text" id="ftp-user" placeholder="username"></div>
@@ -46,26 +58,26 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label for="ftp-port">Porta</label><input type="number" id="ftp-port" value="22"></div>
-                    <div class="form-group"><label for="ftp-protocol">Protocollo</label><select id="ftp-protocol"><option value="sftp" selected>SFTP (consigliato)</option><option value="ftp">FTP</option></select></div>
+                    <div class="form-group"><label for="ftp-protocol">Protocollo</label><div class="custom-select" id="ftp-protocol-wrapper"><select id="ftp-protocol" style="display:none"><option value="sftp" selected>SFTP (consigliato)</option><option value="ftp">FTP</option></select><div class="custom-select-trigger" id="ftp-protocol-trigger"><span class="custom-select-value">SFTP (consigliato)</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="#64748b"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg></div><div class="custom-select-options" id="ftp-protocol-options"><div class="custom-select-option selected" data-value="sftp">SFTP (consigliato)</div><div class="custom-select-option" data-value="ftp">FTP</div></div></div></div>
                 </div>
-                <div class="form-group"><label for="ftp-basepath">Percorso base</label><input type="text" id="ftp-basepath" placeholder="/public_html"><small>La cartella principale del sito sul server</small></div>
+                <div class="form-group"><label for="ftp-basepath">Percorso base</label><input type="text" id="ftp-basepath" placeholder="/"><small>La cartella principale del sito sul server</small></div>
             </section>
             <section class="panel" data-panel="2">
                 <h2>Seleziona Prodotto</h2>
                 <p class="panel-desc">Quale software della iCON Suite vuoi installare?</p>
                 <div class="products">
-                    <label class="product-card"><input type="radio" name="product" value="iconcms"><div class="product-content"><div class="product-icon">✏️</div><div class="product-info"><strong>iCONcms</strong><span>Visual HTML Editor</span></div><div class="product-path">/iconcms/</div></div></label>
-                    <label class="product-card"><input type="radio" name="product" value="iconstat"><div class="product-content"><div class="product-icon">📊</div><div class="product-info"><strong>iCONstat</strong><span>Analytics Dashboard</span></div><div class="product-path">/iconstat/</div></div></label>
-                    <label class="product-card"><input type="radio" name="product" value="iconblog"><div class="product-content"><div class="product-icon">📝</div><div class="product-info"><strong>iCONblog</strong><span>Blog System</span></div><div class="product-path">/iconblog/</div></div></label>
-                    <label class="product-card"><input type="radio" name="product" value="iconvert"><div class="product-content"><div class="product-icon">🔄</div><div class="product-info"><strong>iCONvert</strong><span>HTML Converter</span></div><div class="product-path">/iconvert/</div></div></label>
-                    <label class="product-card"><input type="radio" name="product" value="custom"><div class="product-content"><div class="product-icon">📁</div><div class="product-info"><strong>Personalizzato</strong><span>Percorso custom</span></div><div class="product-path">/___/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="iconcms"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/iconcms.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>iCONcms</strong><span>Visual HTML Editor</span></div><div class="product-path">/iconcms/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="iconstat"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/iconstat.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>iCONstat</strong><span>Analytics Dashboard</span></div><div class="product-path">/iconstat/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="iconblog"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/iconblog.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>iCONblog</strong><span>Blog System</span></div><div class="product-path">/iconblog/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="iconvert"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/iconvert.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>iCONvert</strong><span>HTML Converter</span></div><div class="product-path">/iconvert/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="custom"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/folder.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>Personalizzato</strong><span>Percorso custom</span></div><div class="product-path">/___/</div></div></label>
                 </div>
                 <div class="form-group custom-path-group" style="display: none;"><label for="custom-path">Percorso personalizzato</label><input type="text" id="custom-path" placeholder="/nome-cartella/"></div>
             </section>
             <section class="panel" data-panel="3">
                 <h2>Seleziona Cartella</h2>
                 <p class="panel-desc">Scegli la cartella contenente i file da caricare</p>
-                <div class="folder-selector"><button type="button" id="select-folder" class="btn btn-outline btn-large"><span class="btn-icon">📁</span>Sfoglia...</button><div class="selected-folder" id="selected-folder">Nessuna cartella selezionata</div></div>
+                <div class="folder-selector"><button type="button" id="select-folder" class="btn btn-outline btn-large"><span class="btn-icon"><img class="icon-img" src="assets/folder.svg" alt="gear" width="30" height="30"></span>Sfoglia ...</button><div class="selected-folder" id="selected-folder">Nessuna cartella selezionata</div></div>
                 <div class="folder-preview" id="folder-preview" style="display: none;"><h3>Contenuto della cartella:</h3><div class="file-list" id="file-list"></div><div class="file-count" id="file-count"></div></div>
             </section>
             <section class="panel" data-panel="4">
@@ -76,13 +88,16 @@
                 <div class="upload-complete" id="upload-complete" style="display: none;"><div class="success-icon">✓</div><h3>Installazione completata!</h3><p id="complete-message"></p></div>
             </section>
         </main>
-        <footer class="footer"><button type="button" id="btn-prev" class="btn btn-secondary" disabled>← Indietro</button><button type="button" id="btn-next" class="btn btn-primary">Avanti →</button></footer>
+        <footer class="footer"><button type="button" id="btn-prev" class="btn btn-secondary" disabled><span style="margin-right: 2px;">❮</span> Indietro</button><button type="button" id="btn-next" class="btn btn-primary">Avanti <span style="margin-left: 2px;">❯</span></button></footer>
     </div>
     <div class="modal-overlay" id="modal-profiles" style="display: none;">
-        <div class="modal"><div class="modal-header"><h2>Gestione Profili</h2><button type="button" class="modal-close" id="modal-close">&times;</button></div><div class="modal-body"><div class="profile-list" id="profile-list"></div><div class="profile-empty" id="profile-empty"><p>Nessun profilo salvato</p><small>I profili salvati appariranno qui</small></div></div><div class="modal-footer"><div class="modal-footer-left"><button type="button" id="btn-import" class="btn btn-secondary">📥 Importa</button><button type="button" id="btn-export" class="btn btn-secondary">📤 Esporta</button></div><button type="button" id="btn-close-modal" class="btn btn-primary">Chiudi</button></div></div>
+        <div class="modal"><div class="modal-header"><h2>Gestione Profili</h2><button type="button" class="modal-close" id="modal-close">&times;</button></div><div class="modal-body"><div class="profile-list" id="profile-list"></div><div class="profile-empty" id="profile-empty"><p>Nessun profilo salvato</p><small>I profili salvati appariranno qui</small></div></div><div class="modal-footer"><div class="modal-footer-left"><button type="button" id="btn-import" class="btn btn-secondary"><img class="icon-img" src="assets/import.svg" alt="gear" width="30" height="30"> Importa</button><button type="button" id="btn-export" class="btn btn-secondary"><img class="icon-img" src="assets/export.svg" alt="gear" width="30" height="30"> Esporta</button></div><button type="button" id="btn-close-modal" class="btn btn-primary">Chiudi</button></div></div>
     </div>
     <div class="modal-overlay" id="modal-confirm" style="display: none;">
         <div class="modal modal-small"><div class="modal-header"><h2>Conferma eliminazione</h2></div><div class="modal-body"><p>Sei sicuro di voler eliminare il profilo "<strong id="confirm-profile-name"></strong>"?</p></div><div class="modal-footer"><button type="button" id="btn-cancel-delete" class="btn btn-secondary">Annulla</button><button type="button" id="btn-confirm-delete" class="btn btn-danger">Elimina</button></div></div>
+    </div>
+    <div class="modal-overlay" id="modal-folder-exists" style="display: none;">
+        <div class="modal modal-small"><div class="modal-header"><h2>Cartella esistente</h2></div><div class="modal-body"><p>La cartella <strong id="existing-folder-path"></strong> esiste già sul server.</p><p style="margin-top:8px;color:var(--text-muted);font-size:13px;">Continuando, i file esistenti verranno sovrascritti.</p></div><div class="modal-footer"><button type="button" id="btn-cancel-upload" class="btn btn-secondary">Annulla</button><button type="button" id="btn-confirm-upload" class="btn btn-primary">Aggiorna l'app</button></div></div>
     </div>
     <script src="script.js"></script>
 </body>
