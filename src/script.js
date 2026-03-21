@@ -1,8 +1,25 @@
 // iCONup - Frontend Logic
 
-const { invoke } = window.__TAURI__.core;
-const { open, save } = window.__TAURI__.dialog;
-const { listen } = window.__TAURI__.event;
+if (!navigator.onLine) {
+    const ov = document.getElementById('offline-overlay');
+    ov.style.display = 'flex';
+    document.querySelector('.app').style.display = 'none';
+    throw new Error('offline');
+}
+
+let invoke, open, save, listen;
+try {
+    invoke = window.__TAURI__.core.invoke;
+    open = window.__TAURI__.dialog.open;
+    save = window.__TAURI__.dialog.save;
+    listen = window.__TAURI__.event.listen;
+} catch(e) {
+    console.warn('Tauri not available, running in browser mode');
+    invoke = async () => [];
+    open = async () => null;
+    save = async () => null;
+    listen = async () => {};
+}
 
 let currentStep = 1;
 const totalSteps = 4;
@@ -11,13 +28,64 @@ let currentProfileId = null;
 let profileToDelete = null;
 
 let config = {
-    ftp: { host: '', username: '', password: '', port: 22, protocol: 'sftp', basePath: '' },
+    ftp: { host: '', username: '', password: '', port: 21, protocol: 'ftps', basePath: '' },
     product: '',
     remotePath: '',
     localFolder: ''
 };
 
-const productPaths = { iconcms: '/iconcms/', iconstat: '/iconstat/', iconblog: '/iconblog/', iconvert: '/iconvert/', custom: '' };
+const productPaths = { iconcms: '/_iconcms/', iconstat: '/_iconstat/', iconblog: '/_iconblog/', iconvert: '/_iconcms/iconvert/', custom: '' };
+
+// Custom dropdown helpers
+function initCustomSelect(wrapperId, selectId, onChange) {
+    const wrapper = document.getElementById(wrapperId);
+    const trigger = wrapper.querySelector('.custom-select-trigger');
+    const optionsContainer = wrapper.querySelector('.custom-select-options');
+    const hiddenSelect = document.getElementById(selectId);
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.custom-select.open').forEach(el => { if (el !== wrapper) el.classList.remove('open'); });
+        wrapper.classList.toggle('open');
+    });
+
+    optionsContainer.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-select-option');
+        if (!opt) return;
+        const val = opt.dataset.value;
+        const text = opt.textContent;
+        hiddenSelect.value = val;
+        trigger.querySelector('.custom-select-value').textContent = text;
+        optionsContainer.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        wrapper.classList.remove('open');
+        if (onChange) onChange(val);
+    });
+}
+
+function setCustomSelectValue(wrapperId, selectId, value) {
+    const wrapper = document.getElementById(wrapperId);
+    const hiddenSelect = document.getElementById(selectId);
+    hiddenSelect.value = value;
+    const opts = wrapper.querySelectorAll('.custom-select-option');
+    opts.forEach(o => {
+        o.classList.remove('selected');
+        if (o.dataset.value === value) {
+            o.classList.add('selected');
+            wrapper.querySelector('.custom-select-value').textContent = o.textContent;
+        }
+    });
+}
+
+function renderCustomSelectOptions(wrapperId, options) {
+    const wrapper = document.getElementById(wrapperId);
+    const container = wrapper.querySelector('.custom-select-options');
+    container.innerHTML = options.map(o => `<div class="custom-select-option${o.selected ? ' selected' : ''}" data-value="${o.value}">${o.text}</div>`).join('');
+    const sel = options.find(o => o.selected) || options[0];
+    if (sel) wrapper.querySelector('.custom-select-value').textContent = sel.text;
+}
+
+document.addEventListener('click', () => document.querySelectorAll('.custom-select.open').forEach(el => el.classList.remove('open')));
 
 const panels = document.querySelectorAll('.panel');
 const steps = document.querySelectorAll('.step');
@@ -44,13 +112,16 @@ async function saveProfilesToBackend() {
 
 function renderProfileSelect() {
     const select = document.getElementById('profile-select');
-    select.innerHTML = '<option value="">— Nuovo / Manuale —</option>';
+    select.innerHTML = '<option value="">— Nuovo —</option>';
+    const options = [{ value: '', text: '— Nuovo —', selected: true }];
     profiles.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
         opt.textContent = p.name;
         select.appendChild(opt);
+        options.push({ value: p.id, text: p.name, selected: false });
     });
+    renderCustomSelectOptions('profile-select-wrapper', options);
 }
 
 function renderProfileList() {
@@ -65,8 +136,8 @@ function renderProfileList() {
                 <div class="profile-item-host">${escapeHtml(p.host)} • ${p.protocol.toUpperCase()}</div>
             </div>
             <div class="profile-item-actions">
-                <button type="button" class="btn-duplicate" title="Duplica">📋</button>
-                <button type="button" class="btn-delete" title="Elimina">🗑️</button>
+                <button type="button" class="btn-duplicate" title="Duplica"><img class="profiles-img" src="assets/duplicate.svg" alt="gear" width="24" height="24"></button>
+                <button type="button" class="btn-delete" title="Elimina"><img class="profiles-img" src="assets/delete.svg" alt="gear" width="24" height="24"></button>
             </div>
         </div>
     `).join('');
@@ -86,7 +157,7 @@ function loadProfileIntoForm(id) {
     document.getElementById('ftp-user').value = p.username;
     document.getElementById('ftp-pass').value = p.password;
     document.getElementById('ftp-port').value = p.port;
-    document.getElementById('ftp-protocol').value = p.protocol;
+    setCustomSelectValue('ftp-protocol-wrapper', 'ftp-protocol', p.protocol);
     document.getElementById('ftp-basepath').value = p.basePath;
 }
 
@@ -97,7 +168,7 @@ function clearForm() {
     document.getElementById('ftp-user').value = '';
     document.getElementById('ftp-pass').value = '';
     document.getElementById('ftp-port').value = '22';
-    document.getElementById('ftp-protocol').value = 'sftp';
+    setCustomSelectValue('ftp-protocol-wrapper', 'ftp-protocol', 'ftps');
     document.getElementById('ftp-basepath').value = '';
 }
 
@@ -122,7 +193,7 @@ async function saveCurrentProfile() {
     }
     await saveProfilesToBackend();
     renderProfileSelect();
-    document.getElementById('profile-select').value = currentProfileId;
+    setCustomSelectValue('profile-select-wrapper', 'profile-select', currentProfileId);
     alert('Profilo salvato!');
 }
 
@@ -147,7 +218,7 @@ async function deleteProfile() {
     if (!profileToDelete) return;
     profiles = profiles.filter(x => x.id !== profileToDelete);
     await saveProfilesToBackend();
-    if (currentProfileId === profileToDelete) { clearForm(); document.getElementById('profile-select').value = ''; }
+    if (currentProfileId === profileToDelete) { clearForm(); setCustomSelectValue('profile-select-wrapper', 'profile-select', ''); }
     profileToDelete = null;
     document.getElementById('modal-confirm').style.display = 'none';
     renderProfileSelect();
@@ -182,6 +253,7 @@ function initEventListeners() {
     btnPrev.addEventListener('click', prevStep);
     btnNext.addEventListener('click', nextStep);
     document.getElementById('profile-select').addEventListener('change', e => e.target.value ? loadProfileIntoForm(e.target.value) : clearForm());
+    initCustomSelect('profile-select-wrapper', 'profile-select', val => val ? loadProfileIntoForm(val) : clearForm());
     document.getElementById('btn-save-profile').addEventListener('click', saveCurrentProfile);
     document.querySelectorAll('input[name="product"]').forEach(r => r.addEventListener('change', e => {
         config.product = e.target.value;
@@ -190,8 +262,8 @@ function initEventListeners() {
     }));
     document.getElementById('custom-path').addEventListener('input', e => config.remotePath = e.target.value);
     document.getElementById('select-folder').addEventListener('click', selectFolder);
-    document.getElementById('ftp-protocol').addEventListener('change', e => {
-        document.getElementById('ftp-port').value = e.target.value === 'sftp' ? 22 : 21;
+    initCustomSelect('ftp-protocol-wrapper', 'ftp-protocol', val => {
+        document.getElementById('ftp-port').value = val === 'sftp' ? 22 : 21;
     });
     document.getElementById('btn-manage-profiles').addEventListener('click', () => { renderProfileList(); document.getElementById('modal-profiles').style.display = 'flex'; });
     document.getElementById('modal-close').addEventListener('click', () => document.getElementById('modal-profiles').style.display = 'none');
@@ -214,7 +286,7 @@ function updateNavigation() {
     steps.forEach(s => { const n = parseInt(s.dataset.step); s.classList.remove('active', 'completed'); if (n === currentStep) s.classList.add('active'); else if (n < currentStep) s.classList.add('completed'); });
     btnPrev.disabled = currentStep === 1;
     if (currentStep === totalSteps) btnNext.style.display = 'none';
-    else { btnNext.style.display = 'inline-flex'; btnNext.textContent = currentStep === 3 ? 'Inizia Upload →' : 'Avanti →'; }
+    else { btnNext.style.display = 'inline-flex'; btnNext.innerHTML = currentStep === 3 ? 'Inizia Upload <span style="margin-left:2px">❯</span>' : 'Avanti <span style="margin-left:2px">❯</span>'; }
 }
 
 function prevStep() { if (currentStep > 1) { currentStep--; updateNavigation(); } }
@@ -280,30 +352,82 @@ function showFolderPreview(files) {
     document.getElementById('file-count').textContent = `Totale: ${files.length} file`;
 }
 
+let pendingUploadConfig = null;
+
+function getFullRemotePath() {
+    let fullRemotePath = config.ftp.basePath + config.remotePath;
+    fullRemotePath = fullRemotePath.replace(/\/+/g, '/');
+    if (!fullRemotePath.startsWith('/')) fullRemotePath = '/' + fullRemotePath;
+    return fullRemotePath;
+}
+
+function getUploadConfig(fullRemotePath) {
+    return {
+        host: config.ftp.host,
+        username: config.ftp.username,
+        password: config.ftp.password,
+        port: config.ftp.port,
+        protocol: config.ftp.protocol,
+        remote_path: fullRemotePath,
+        local_path: config.localFolder
+    };
+}
+
 async function startUpload() {
     const statusEl = document.getElementById('upload-status');
     const logEl = document.getElementById('upload-log');
-    statusEl.textContent = 'Connessione al server...';
+    statusEl.textContent = 'Verifica cartella remota...';
     logEl.innerHTML = '';
     addLog('Avvio connessione ' + config.ftp.protocol.toUpperCase() + '...', 'info');
+
+    const fullRemotePath = getFullRemotePath();
+    const uploadConfig = getUploadConfig(fullRemotePath);
+
+    addLog(`Percorso destinazione: ${fullRemotePath}`, 'info');
+
     try {
-        let fullRemotePath = config.ftp.basePath + config.remotePath;
-        fullRemotePath = fullRemotePath.replace(/\/+/g, '/');
-        if (!fullRemotePath.startsWith('/')) fullRemotePath = '/' + fullRemotePath;
-        addLog(`Percorso destinazione: ${fullRemotePath}`, 'info');
-        await invoke('upload_folder', {
-            config: {
-                host: config.ftp.host,
-                username: config.ftp.username,
-                password: config.ftp.password,
-                port: config.ftp.port,
-                protocol: config.ftp.protocol,
-                remote_path: fullRemotePath,
-                local_path: config.localFolder
-            }
-        });
-    } catch (e) { addLog(`Errore: ${e}`, 'error'); statusEl.textContent = 'Errore durante l\'upload'; }
+        const exists = await invoke('check_remote_dir', { config: uploadConfig });
+        if (exists) {
+            pendingUploadConfig = uploadConfig;
+            document.getElementById('existing-folder-path').textContent = fullRemotePath;
+            document.getElementById('modal-folder-exists').style.display = 'flex';
+            return;
+        }
+        await doUpload(uploadConfig);
+    } catch (e) {
+        addLog(`Errore: ${e}`, 'error');
+        statusEl.textContent = 'Errore durante la connessione';
+    }
 }
+
+async function doUpload(uploadConfig) {
+    const statusEl = document.getElementById('upload-status');
+    statusEl.textContent = 'Connessione al server...';
+    addLog('Upload in corso...', 'info');
+    try {
+        await invoke('upload_folder', { config: uploadConfig });
+    } catch (e) {
+        addLog(`Errore: ${e}`, 'error');
+        statusEl.textContent = 'Errore durante l\'upload';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-confirm-upload').addEventListener('click', async () => {
+        document.getElementById('modal-folder-exists').style.display = 'none';
+        if (pendingUploadConfig) {
+            await doUpload(pendingUploadConfig);
+            pendingUploadConfig = null;
+        }
+    });
+    document.getElementById('btn-cancel-upload').addEventListener('click', () => {
+        document.getElementById('modal-folder-exists').style.display = 'none';
+        pendingUploadConfig = null;
+        currentStep = 3;
+        updateNavigation();
+        addLog('Upload annullato.', 'info');
+    });
+});
 
 function updateProgress(current, total, filename, status) {
     const pct = Math.round((current / total) * 100);
@@ -330,7 +454,7 @@ function showUploadComplete(data) {
     document.getElementById('upload-complete').style.display = 'block';
     document.getElementById('complete-message').textContent = `${data.total_files} file caricati in ${data.remote_path}`;
     addLog(`Completato! ${data.total_files} file caricati.`, 'success');
-    btnPrev.textContent = '← Nuova installazione';
+    btnPrev.innerHTML = '<span style="margin-right:2px">❮</span> Nuova installazione';
     btnPrev.disabled = false;
     btnPrev.onclick = () => { currentStep = 1; updateNavigation(); resetUploadUI(); };
 }
@@ -346,6 +470,6 @@ function resetUploadUI() {
     document.getElementById('progress-fill').style.width = '0%';
     document.getElementById('progress-percent').textContent = '0%';
     document.getElementById('progress-files').textContent = '0 / 0 file';
-    btnPrev.textContent = '← Indietro';
+    btnPrev.innerHTML = '<span style="margin-right:2px">❮</span> Indietro';
     btnPrev.onclick = prevStep;
 }
