@@ -7,83 +7,120 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="offline-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:9999;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
+    <div style="text-align:center;padding:40px;">
+        <div style="font-size:48px;margin-bottom:16px;">⚠</div>
+        <h2 style="font-size:18px;font-weight:600;margin-bottom:8px;" data-i18n="offlineTitle">Nessuna connessione</h2>
+        <p style="color:#64748b;font-size:14px;margin-bottom:24px;" data-i18n="offlineDesc">iCONup richiede una connessione internet per funzionare.</p>
+        <button onclick="location.reload()" style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;" data-i18n="offlineRetry">Riprova</button>
+    </div>
+</div>
     <div class="app">
+        <div class="top-block">
+        <div class="dragable-area" data-tauri-drag-region>
+            <div class="dragable-app-title">iCONup - iCON Suite Installer</div>
+        </div>
         <header class="header">
             <div class="logo">
-                <span class="logo-icon">⬆</span>
-                <span class="logo-text">iCON<strong>up</strong></span>
+                <span class="logo-icon-image"><img src="assets/logo.png" alt="iCONup" width="36" height="36"></span>
+                <span class="logo-icon-image"><img style="max-width: 60px; margin-left: 20px;" src="assets/iconup_main_logo.png" alt="iCONup"></span>
             </div>
             <div class="header-actions">
-                <button type="button" id="btn-manage-profiles" class="btn-icon-only" title="Gestione profili">⚙️</button>
-                <span class="version">v1.0.0</span>
+                <button type="button" id="btn-manage-profiles" class="btn-icon-only" data-i18n-title="tipManageProfiles" title="Gestione profili"><img class="gear-img" src="assets/gear.svg" alt="gear" width="16" height="16"></button>
+                <button type="button" id="btn-lang" class="btn-lang">EN</button>
+                <span class="version">v1.0</span>
             </div>
         </header>
+        </div>
         <div class="steps">
-            <div class="step active" data-step="1"><span class="step-number">1</span><span class="step-label">Server</span></div>
-            <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Prodotto</span></div>
-            <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">Cartella</span></div>
-            <div class="step" data-step="4"><span class="step-number">4</span><span class="step-label">Upload</span></div>
+            <div class="step active" data-step="1"><span class="step-number">1</span><span class="step-label" data-i18n="stepServer">Server</span></div>
+            <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label" data-i18n="stepProduct">Prodotto</span></div>
+            <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label" data-i18n="stepFolder">Cartella</span></div>
+            <div class="step" data-step="4"><span class="step-number">4</span><span class="step-label" data-i18n="stepUpload">Upload</span></div>
         </div>
         <main class="content">
             <section class="panel active" data-panel="1">
-                <h2>Configurazione Server</h2>
-                <p class="panel-desc">Seleziona un profilo salvato o inserisci nuovi dati</p>
+                <h2 data-i18n="serverTitle">Configurazione Server</h2>
+                <p class="panel-desc" data-i18n="serverDesc">Seleziona un profilo salvato o inserisci nuovi dati</p>
                 <div class="profile-selector">
                     <div class="form-group">
-                        <label for="profile-select">Profilo cliente</label>
+                        <label for="profile-select" data-i18n="profileLabel">Profilo cliente</label>
                         <div class="profile-select-row">
-                            <select id="profile-select"><option value="">— Nuovo / Manuale —</option></select>
-                            <button type="button" id="btn-save-profile" class="btn btn-small btn-outline" title="Salva profilo">💾</button>
+                            <div class="custom-select" id="profile-select-wrapper">
+                                <select id="profile-select" style="display:none"><option value="">— Nuovo —</option></select>
+                                <div class="custom-select-trigger" id="profile-select-trigger"><span class="custom-select-value" data-i18n="profileNew">— Nuovo —</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="#64748b"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg></div>
+                                <div class="custom-select-options" id="profile-select-options"></div>
+                            </div>
+                            <button type="button" id="btn-save-profile" class="btn btn-save" data-i18n-title="tipSaveProfile" title="Salva profilo"><img class="save-img" src="assets/save-blue.svg" alt="gear" width="30" height="30"></button>
                         </div>
                     </div>
                 </div>
                 <hr class="divider">
-                <div class="form-group"><label for="profile-name">Nome profilo</label><input type="text" id="profile-name" placeholder="Es: Pizzeria Da Mario"><small>Un nome per identificare questo cliente</small></div>
-                <div class="form-group"><label for="ftp-host">Host</label><input type="text" id="ftp-host" placeholder="ftp.tuosito.it"></div>
+                <div class="form-group"><label for="profile-name" data-i18n="profileNameLabel">Nome profilo</label><input type="text" id="profile-name" data-i18n-placeholder="profileNamePlaceholder" placeholder="Es: iCONSuite"><small data-i18n="profileNameHint">Un nome personlizzato per identificare questo sito</small></div>
+                <div class="form-group"><label for="ftp-host" data-i18n="hostLabel">Host</label><input type="text" id="ftp-host" data-i18n-placeholder="hostPlaceholder" placeholder="ftp.tuosito.it"></div>
                 <div class="form-row">
-                    <div class="form-group"><label for="ftp-user">Username</label><input type="text" id="ftp-user" placeholder="username"></div>
-                    <div class="form-group"><label for="ftp-pass">Password</label><input type="password" id="ftp-pass" placeholder="••••••••"></div>
+                    <div class="form-group"><label for="ftp-user" data-i18n="usernameLabel">Username</label><input type="text" id="ftp-user" data-i18n-placeholder="usernamePlaceholder" placeholder="username"></div>
+                    <div class="form-group"><label for="ftp-pass" data-i18n="passwordLabel">Password</label><input type="password" id="ftp-pass" placeholder="••••••••"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label for="ftp-port">Porta</label><input type="number" id="ftp-port" value="22"></div>
-                    <div class="form-group"><label for="ftp-protocol">Protocollo</label><select id="ftp-protocol"><option value="sftp" selected>SFTP (consigliato)</option><option value="ftp">FTP</option></select></div>
+                    <div class="form-group"><label for="ftp-port" data-i18n="portLabel">Porta</label><input type="number" id="ftp-port" value="21"></div>
+                    <div class="form-group"><label for="ftp-protocol" data-i18n="protocolLabel">Protocollo</label><div class="custom-select" id="ftp-protocol-wrapper"><select id="ftp-protocol" style="display:none">
+                        <option value="ftps" selected>FTPS (TLS)</option>
+                        <option value="ftp">FTP</option>
+                        <option value="sftp">SFTP</option>                        
+                        </select>
+                        <div class="custom-select-trigger" id="ftp-protocol-trigger">
+                            <span class="custom-select-value">FTPS (TLS)</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="#64748b"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+                        </div>
+                        <div class="custom-select-options" id="ftp-protocol-options">
+                            <div class="custom-select-option selected" data-value="ftps">FTPS (TLS)</div>
+                            <div class="custom-select-option" data-value="ftp">FTP</div>
+                            <div class="custom-select-option" data-value="sftp">SFTP</div>
+                        </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group"><label for="ftp-basepath">Percorso base</label><input type="text" id="ftp-basepath" placeholder="/public_html"><small>La cartella principale del sito sul server</small></div>
+                <div class="form-group"><label for="ftp-basepath" data-i18n="basePathLabel">Percorso base</label><input type="text" id="ftp-basepath" data-i18n-placeholder="basePathPlaceholder" placeholder="/"><small data-i18n="basePathHint">La cartella principale del sito sul server</small></div>
             </section>
             <section class="panel" data-panel="2">
-                <h2>Seleziona Prodotto</h2>
-                <p class="panel-desc">Quale software della iCON Suite vuoi installare?</p>
+                <h2 data-i18n="productTitle">Seleziona Prodotto</h2>
+                <p class="panel-desc" data-i18n="productDesc">Quale software della iCON Suite vuoi installare?</p>
                 <div class="products">
-                    <label class="product-card"><input type="radio" name="product" value="iconcms"><div class="product-content"><div class="product-icon">✏️</div><div class="product-info"><strong>iCONcms</strong><span>Visual HTML Editor</span></div><div class="product-path">/iconcms/</div></div></label>
-                    <label class="product-card"><input type="radio" name="product" value="iconstat"><div class="product-content"><div class="product-icon">📊</div><div class="product-info"><strong>iCONstat</strong><span>Analytics Dashboard</span></div><div class="product-path">/iconstat/</div></div></label>
-                    <label class="product-card"><input type="radio" name="product" value="iconblog"><div class="product-content"><div class="product-icon">📝</div><div class="product-info"><strong>iCONblog</strong><span>Blog System</span></div><div class="product-path">/iconblog/</div></div></label>
-                    <label class="product-card"><input type="radio" name="product" value="iconvert"><div class="product-content"><div class="product-icon">🔄</div><div class="product-info"><strong>iCONvert</strong><span>HTML Converter</span></div><div class="product-path">/iconvert/</div></div></label>
-                    <label class="product-card"><input type="radio" name="product" value="custom"><div class="product-content"><div class="product-icon">📁</div><div class="product-info"><strong>Personalizzato</strong><span>Percorso custom</span></div><div class="product-path">/___/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="iconcms"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/iconcms.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>iCONcms</strong><span>Visual HTML Editor</span></div><div class="product-path">/_iconcms/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="iconstat"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/iconstat.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>iCONstat</strong><span>Analytics Dashboard</span></div><div class="product-path">/_iconstat/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="iconblog"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/iconblog.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>iCONblog</strong><span>Blog System</span></div><div class="product-path">/_iconblog/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="iconvert"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/iconvert.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong>iCONvert</strong><span>HTML Converter</span></div><div class="product-path">/_iconcms/iconvert/</div></div></label>
+                    <label class="product-card"><input type="radio" name="product" value="custom"><div class="product-content"><div class="product-icon"><img class="icon-img" src="assets/folder.svg" alt="gear" width="30" height="30"></div><div class="product-info"><strong data-i18n="productCustom">Personalizzato</strong><span data-i18n="productCustomDesc">Percorso custom</span></div><div class="product-path">/___/</div></div></label>
                 </div>
-                <div class="form-group custom-path-group" style="display: none;"><label for="custom-path">Percorso personalizzato</label><input type="text" id="custom-path" placeholder="/nome-cartella/"></div>
+                <div class="form-group custom-path-group" style="display: none;"><label for="custom-path" data-i18n="customPathLabel">Percorso personalizzato</label><input type="text" id="custom-path" data-i18n-placeholder="customPathPlaceholder" placeholder="/nome-cartella/"></div>
             </section>
             <section class="panel" data-panel="3">
-                <h2>Seleziona Cartella</h2>
-                <p class="panel-desc">Scegli la cartella contenente i file da caricare</p>
-                <div class="folder-selector"><button type="button" id="select-folder" class="btn btn-outline btn-large"><span class="btn-icon">📁</span>Sfoglia...</button><div class="selected-folder" id="selected-folder">Nessuna cartella selezionata</div></div>
-                <div class="folder-preview" id="folder-preview" style="display: none;"><h3>Contenuto della cartella:</h3><div class="file-list" id="file-list"></div><div class="file-count" id="file-count"></div></div>
+                <h2 data-i18n="folderTitle">Seleziona Cartella</h2>
+                <p class="panel-desc" data-i18n="folderDesc">Scegli la cartella contenente i file da caricare</p>
+                <div class="folder-selector"><button type="button" id="select-folder" class="btn btn-outline btn-large"><span class="btn-icon"><img class="icon-img" src="assets/folder.svg" alt="gear" width="30" height="30"></span><span data-i18n="folderBrowse">Sfoglia ...</span></button><div class="selected-folder" id="selected-folder" data-i18n="folderNone">Nessuna cartella selezionata</div></div>
+                <div class="folder-preview" id="folder-preview" style="display: none;"><h3 data-i18n="folderContents">Contenuto della cartella:</h3><div class="file-list" id="file-list"></div><div class="file-count" id="file-count"></div></div>
             </section>
             <section class="panel" data-panel="4">
-                <h2>Upload in corso</h2>
-                <p class="panel-desc" id="upload-status">Preparazione upload...</p>
+                <h2 data-i18n="uploadTitle">Upload in corso</h2>
+                <p class="panel-desc" id="upload-status" data-i18n="uploadPreparing">Preparazione upload...</p>
                 <div class="upload-progress"><div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div><div class="progress-text"><span id="progress-percent">0%</span><span id="progress-files">0 / 0 file</span></div></div>
                 <div class="upload-log" id="upload-log"></div>
-                <div class="upload-complete" id="upload-complete" style="display: none;"><div class="success-icon">✓</div><h3>Installazione completata!</h3><p id="complete-message"></p></div>
+                <div class="upload-complete" id="upload-complete" style="display: none;"><div class="success-icon">✓</div><h3 data-i18n="uploadCompleteTitle">Installazione completata!</h3><p id="complete-message"></p></div>
             </section>
         </main>
-        <footer class="footer"><button type="button" id="btn-prev" class="btn btn-secondary" disabled>← Indietro</button><button type="button" id="btn-next" class="btn btn-primary">Avanti →</button></footer>
+        <footer class="footer"><button type="button" id="btn-prev" class="btn btn-secondary prevnext" disabled><span style="margin-right: 2px;">❮</span> <span data-i18n="btnBack">Indietro</span></button><button type="button" id="btn-next" class="btn btn-primary prevnext"><span data-i18n="btnNext">Avanti</span> <span style="margin-left: 2px;">❯</span></button></footer>
     </div>
     <div class="modal-overlay" id="modal-profiles" style="display: none;">
-        <div class="modal"><div class="modal-header"><h2>Gestione Profili</h2><button type="button" class="modal-close" id="modal-close">&times;</button></div><div class="modal-body"><div class="profile-list" id="profile-list"></div><div class="profile-empty" id="profile-empty"><p>Nessun profilo salvato</p><small>I profili salvati appariranno qui</small></div></div><div class="modal-footer"><div class="modal-footer-left"><button type="button" id="btn-import" class="btn btn-secondary">📥 Importa</button><button type="button" id="btn-export" class="btn btn-secondary">📤 Esporta</button></div><button type="button" id="btn-close-modal" class="btn btn-primary">Chiudi</button></div></div>
+        <div class="modal"><div class="modal-header"><h2 data-i18n="manageProfilesTitle">Gestione Profili</h2><button type="button" class="modal-close" id="modal-close">&times;</button></div><div class="modal-body"><div class="profile-list" id="profile-list"></div><div class="profile-empty" id="profile-empty"><p data-i18n="profilesEmpty">Nessun profilo salvato</p><small data-i18n="profilesEmptyHint">I profili salvati appariranno qui</small></div></div><div class="modal-footer"><div class="modal-footer-left"><button type="button" id="btn-import" class="btn btn-secondary"><img class="icon-img" src="assets/import.svg" alt="gear" width="30" height="30"> <span data-i18n="btnImport">Importa</span></button><button type="button" id="btn-export" class="btn btn-secondary"><img class="icon-img" src="assets/export.svg" alt="gear" width="30" height="30"> <span data-i18n="btnExport">Esporta</span></button></div><button type="button" id="btn-close-modal" class="btn btn-primary" data-i18n="btnClose">Chiudi</button></div></div>
     </div>
     <div class="modal-overlay" id="modal-confirm" style="display: none;">
-        <div class="modal modal-small"><div class="modal-header"><h2>Conferma eliminazione</h2></div><div class="modal-body"><p>Sei sicuro di voler eliminare il profilo "<strong id="confirm-profile-name"></strong>"?</p></div><div class="modal-footer"><button type="button" id="btn-cancel-delete" class="btn btn-secondary">Annulla</button><button type="button" id="btn-confirm-delete" class="btn btn-danger">Elimina</button></div></div>
+        <div class="modal modal-small"><div class="modal-header"><h2 data-i18n="confirmDeleteTitle">Conferma eliminazione</h2></div><div class="modal-body"><p><span data-i18n="confirmDeleteMsg">Sei sicuro di voler eliminare il profilo</span> "<strong id="confirm-profile-name"></strong>"?</p></div><div class="modal-footer"><button type="button" id="btn-cancel-delete" class="btn btn-secondary" data-i18n="btnCancel">Annulla</button><button type="button" id="btn-confirm-delete" class="btn btn-danger" data-i18n="btnDelete">Elimina</button></div></div>
     </div>
+    <div class="modal-overlay" id="modal-folder-exists" style="display: none;">
+        <div class="modal modal-small"><div class="modal-header"><h2 data-i18n="folderExistsTitle">Cartella esistente</h2></div><div class="modal-body"><p id="folder-exists-msg"></p><p style="margin-top:8px;color:var(--text-muted);font-size:13px;" data-i18n="folderExistsWarn">Continuando, i file esistenti verranno sovrascritti.</p></div><div class="modal-footer"><button type="button" id="btn-cancel-upload" class="btn btn-secondary" data-i18n="btnCancel">Annulla</button><button type="button" id="btn-confirm-upload" class="btn btn-primary" data-i18n="btnUpdateApp">Aggiorna l'app</button></div></div>
+    </div>
+    <script src="lang.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
