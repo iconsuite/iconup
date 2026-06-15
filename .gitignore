@@ -1,0 +1,12 @@
+node_modules/
+dist/
+src-tauri/target/
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*.log
+npm-debug.log*
+package-lock.json
+Cargo.lock
