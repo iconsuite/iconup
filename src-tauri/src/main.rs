@@ -706,10 +706,17 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            let version = app.package_info().version.to_string();
+
             let help_page = MenuItemBuilder::new("iCONup help")
                 .id("help-page")
                 .build(app)?;
 
+            let help_mail = MenuItemBuilder::new("Contact support")
+                .id("help-mail")
+                .build(app)?;
+
+            #[cfg(target_os = "macos")]
             let app_submenu = SubmenuBuilder::new(app, "iCONup")
                 .about(None)
                 .separator()
@@ -718,6 +725,21 @@ fn main() {
                 .hide()
                 .hide_others()
                 .show_all()
+                .separator()
+                .quit()
+                .build()?;
+
+            // Outside macOS the About popup needs its text, and Mac-only items go.
+            #[cfg(not(target_os = "macos"))]
+            let app_submenu = SubmenuBuilder::new(app, "iCONup")
+                .about(Some(tauri::menu::AboutMetadata {
+                    name: Some("iCONup".into()),
+                    version: Some(version.clone()),
+                    comments: Some("iCON Suite Installer".into()),
+                    copyright: Some("© 2026 YMEDIA / iCON Suite".into()),
+                    website: Some("https://www.iconsuite.it".into()),
+                    ..Default::default()
+                }))
                 .separator()
                 .quit()
                 .build()?;
@@ -738,6 +760,7 @@ fn main() {
 
             let help_submenu = SubmenuBuilder::new(app, "Help")
                 .item(&help_page)
+                .item(&help_mail)
                 .build()?;
 
             let menu = MenuBuilder::new(app)
@@ -746,18 +769,23 @@ fn main() {
 
             app.set_menu(menu)?;
 
-            // Auto-size window to 95% of screen height
+            // Window height: 85% of the screen, never more than 770.
             if let Some(window) = app.get_webview_window("main") {
                 if let Some(monitor) = window.current_monitor().ok().flatten() {
                     let screen_height = monitor.size().height as f64 / monitor.scale_factor();
-                    let new_height = (screen_height * 0.85) as u32;
+                    let new_height = ((screen_height * 0.85) as u32).min(770);
                     let _ = window.set_size(tauri::LogicalSize::new(600, new_height));
                 }
             }
 
             app.on_menu_event(move |_app, event| {
                 if event.id() == "help-page" {
-                    let _ = open::that("https://www.iconsuite.it/iconup");
+                    let _ = open::that("https://iconsuite.it/iconup/#faq");
+                } else if event.id() == "help-mail" {
+                    let _ = open::that(format!(
+                        "mailto:support@iconsuite.it?subject=iCONup%20{}",
+                        version
+                    ));
                 }
             });
 

@@ -17,7 +17,7 @@ const LANGS = {
         profileNameHint: 'Un nome personalizzato per identificare questo sito',
         hostLabel: 'Host',
         hostPlaceholder: 'ftp.tuosito.it',
-        usernameLabel: 'Username',
+        usernameLabel: 'Nome utente',
         usernamePlaceholder: 'username',
         passwordLabel: 'Password',
         portLabel: 'Porta',
