@@ -1,6 +1,6 @@
 {
   "name": "iconup",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "iCON Suite Installer - Upload sicuro via FTP/FTPS/SFTP",
   "author": "YMEDIA",
   "license": "MIT",
@@ -10,9 +10,9 @@
     "build": "tauri build"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
+    "@tauri-apps/cli": "2.11.2"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2"
+    "@tauri-apps/api": "2.11.0"
   }
 }
