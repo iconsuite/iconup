@@ -14,10 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
+          - platform: 'macos-15'
             args: '--target aarch64-apple-darwin'
             name: 'macOS-ARM'
-          - platform: 'macos-latest'
+          - platform: 'macos-15'
             args: '--target x86_64-apple-darwin'
             name: 'macOS-Intel'
           - platform: 'ubuntu-22.04'
@@ -42,7 +42,7 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-15' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Install dependencies (Linux only)
         if: matrix.platform == 'ubuntu-22.04'

@@ -9,4 +9,3 @@ src-tauri/target/
 *.log
 npm-debug.log*
 package-lock.json
-Cargo.lock
