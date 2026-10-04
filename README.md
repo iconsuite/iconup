@@ -1,4 +1,4 @@
-# iCONup v1.2
+# iCONup v1.3
 
 Utility desktop per l'installazione dei prodotti della **iCON Suite** via FTP/FTPS/SFTP.
 
@@ -51,4 +51,4 @@ Non è consentita la modifica, la redistribuzione o l'inclusione in altri prodot
 
 ## Build
 
-v1.2.8
+v1.3.3
