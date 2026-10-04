@@ -200,7 +200,9 @@ fn list_folder_contents(path: String) -> Result<Vec<String>, String> {
         .filter(|e| e.file_type().is_file())
     {
         if let Ok(relative) = entry.path().strip_prefix(&path) {
-            files.push(relative.display().to_string());
+            if !is_system_junk(relative) {
+                files.push(relative.display().to_string());
+            }
         }
     }
     Ok(files)
@@ -344,6 +346,18 @@ impl UploadQueue {
     }
 }
 
+// Finder and Explorer leftovers: never uploaded.
+fn is_system_junk(relative: &Path) -> bool {
+    relative.components().any(|part| {
+        let name = part.as_os_str().to_string_lossy();
+        name == ".DS_Store"
+            || name == "__MACOSX"
+            || name.starts_with("._")
+            || name.eq_ignore_ascii_case("Thumbs.db")
+            || name.eq_ignore_ascii_case("desktop.ini")
+    })
+}
+
 // Files to upload, plus every remote directory to create, each listed once.
 fn collect_jobs(config: &UploadConfig) -> Result<(Vec<UploadJob>, Vec<String>), String> {
     let files: Vec<_> = WalkDir::new(&config.local_path)
@@ -361,6 +375,10 @@ fn collect_jobs(config: &UploadConfig) -> Result<(Vec<UploadJob>, Vec<String>), 
         let relative_path = local_file_path
             .strip_prefix(&config.local_path)
             .map_err(|e| format!("Errore percorso: {}", e))?;
+
+        if is_system_junk(relative_path) {
+            continue;
+        }
 
         let remote_file_path = format!(
             "{}/{}",
