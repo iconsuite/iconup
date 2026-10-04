@@ -51,4 +51,4 @@ Non è consentita la modifica, la redistribuzione o l'inclusione in altri prodot
 
 ## Build
 
-v1.2.6
+v1.2.7
